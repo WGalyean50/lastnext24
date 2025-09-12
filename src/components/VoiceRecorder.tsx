@@ -168,6 +168,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
+  const dataRequestIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -187,6 +188,10 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
+    }
+    if (dataRequestIntervalRef.current) {
+      clearInterval(dataRequestIntervalRef.current);
+      dataRequestIntervalRef.current = null;
     }
   }, []);
 
@@ -229,15 +234,31 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       }
       console.log('[VoiceRecorder] getUserMedia is supported');
 
-      // Request microphone permission
+      // Request microphone permission with Safari-optimized constraints
       console.log('[VoiceRecorder] Requesting microphone permission...');
-      const stream = await navigator.mediaDevices.getUserMedia({
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      console.log('[VoiceRecorder] Safari detected:', isSafari);
+      
+      const audioConstraints = isSafari ? {
+        // Safari-optimized constraints
+        audio: {
+          sampleRate: 44100,
+          channelCount: 1,
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+        }
+      } : {
+        // Chrome/other browsers
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
         }
-      });
+      };
+      
+      console.log('[VoiceRecorder] Audio constraints:', audioConstraints);
+      const stream = await navigator.mediaDevices.getUserMedia(audioConstraints);
       console.log('[VoiceRecorder] Microphone permission granted, stream obtained');
 
       streamRef.current = stream;
@@ -263,11 +284,15 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       let detectedMimeType = '';
       let options = {};
       
-      // Try different MIME types in order of preference for Safari/WebKit compatibility
-      const mimeTypes = [
+      // Safari-specific MIME type handling
+      const mimeTypes = isSafari ? [
         'audio/mp4',
+        'audio/wav',
+        ''
+      ] : [
         'audio/webm;codecs=opus',
         'audio/webm',
+        'audio/mp4',
         'audio/ogg;codecs=opus',
         ''
       ];
@@ -284,6 +309,12 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       if (detectedMimeType) {
         options = { mimeType: detectedMimeType };
       }
+      
+      // Safari-specific options
+      if (isSafari && detectedMimeType === 'audio/mp4') {
+        options = { mimeType: 'audio/mp4;codecs=mp4a.40.2' };
+        console.log('[VoiceRecorder] Using Safari-specific MP4 codec');
+      }
 
       // Create MediaRecorder
       console.log('[VoiceRecorder] Creating MediaRecorder with options:', options);
@@ -296,12 +327,27 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       console.log('[VoiceRecorder] Setting up MediaRecorder event handlers...');
       mediaRecorder.ondataavailable = (event) => {
         console.log('[VoiceRecorder] Data available:', event.data.size, 'bytes', 'type:', event.data.type);
+        console.log('[VoiceRecorder] Event details:', {
+          size: event.data.size,
+          type: event.data.type,
+          lastModified: event.data.lastModified,
+          timecode: event.timecode
+        });
+        
         // Always push data, even if empty, to see what we're getting
         audioChunksRef.current.push(event.data);
         if (event.data && event.data.size > 0) {
           console.log('[VoiceRecorder] Adding valid chunk to audioChunks array');
         } else {
-          console.warn('[VoiceRecorder] Received empty chunk - this may be normal for Safari');
+          console.warn('[VoiceRecorder] Received empty chunk - checking if data exists in other form');
+          // Try to check if there's data in the blob despite size=0
+          if (event.data instanceof Blob) {
+            console.log('[VoiceRecorder] Blob details:', {
+              size: event.data.size,
+              type: event.data.type,
+              constructor: event.data.constructor.name
+            });
+          }
         }
       };
 
@@ -348,8 +394,23 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       };
 
       // Start recording
-      console.log('[VoiceRecorder] Starting MediaRecorder with continuous recording...');
-      mediaRecorder.start(); // Collect data when stopped (more compatible with Safari)
+      console.log('[VoiceRecorder] Starting MediaRecorder...');
+      if (isSafari) {
+        // For Safari, use intervals to request data periodically
+        mediaRecorder.start();
+        console.log('[VoiceRecorder] Safari: Starting with periodic data requests');
+        dataRequestIntervalRef.current = setInterval(() => {
+          if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            console.log('[VoiceRecorder] Safari: Requesting data...');
+            mediaRecorderRef.current.requestData();
+          }
+        }, 1000);
+      } else {
+        // For other browsers, use time slices
+        mediaRecorder.start(1000);
+        console.log('[VoiceRecorder] Non-Safari: Starting with 1000ms time slices');
+      }
+      
       console.log('[VoiceRecorder] MediaRecorder started, setting state to recording');
       setRecordingState('recording');
       startTimer();
