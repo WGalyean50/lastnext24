@@ -330,7 +330,6 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         console.log('[VoiceRecorder] Event details:', {
           size: event.data.size,
           type: event.data.type,
-          lastModified: event.data.lastModified,
           timecode: event.timecode
         });
         
