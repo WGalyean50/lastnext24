@@ -242,6 +242,22 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 
       streamRef.current = stream;
 
+      // Verify the audio stream is active and has audio tracks
+      const audioTracks = stream.getAudioTracks();
+      console.log('[VoiceRecorder] Audio tracks:', audioTracks.length);
+      
+      if (audioTracks.length === 0) {
+        throw new Error('No audio tracks found in the stream');
+      }
+      
+      const audioTrack = audioTracks[0];
+      console.log('[VoiceRecorder] Audio track state:', audioTrack.readyState);
+      console.log('[VoiceRecorder] Audio track enabled:', audioTrack.enabled);
+      
+      if (audioTrack.readyState === 'ended') {
+        throw new Error('Audio track has ended unexpectedly');
+      }
+
       // Check supported MIME types and use fallback if needed
       console.log('[VoiceRecorder] Checking MIME type support...');
       let mimeType = 'audio/webm;codecs=opus';
@@ -273,17 +289,43 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       // Set up event handlers
       console.log('[VoiceRecorder] Setting up MediaRecorder event handlers...');
       mediaRecorder.ondataavailable = (event) => {
-        console.log('[VoiceRecorder] Data available:', event.data.size, 'bytes');
-        if (event.data.size > 0) {
+        console.log('[VoiceRecorder] Data available:', event.data.size, 'bytes', 'type:', event.data.type);
+        if (event.data && event.data.size > 0) {
+          console.log('[VoiceRecorder] Adding chunk to audioChunks array');
           audioChunksRef.current.push(event.data);
+        } else {
+          console.warn('[VoiceRecorder] Received empty or invalid data chunk');
         }
       };
 
       mediaRecorder.onstop = () => {
         console.log('[VoiceRecorder] Recording stopped, processing audio...');
+        console.log('[VoiceRecorder] Number of audio chunks:', audioChunksRef.current.length);
+        
+        if (audioChunksRef.current.length === 0) {
+          console.error('[VoiceRecorder] No audio chunks were recorded!');
+          setErrorMessage('No audio data was captured. Please check your microphone and try again.');
+          setRecordingState('error');
+          cleanupStream();
+          return;
+        }
+        
+        // Log each chunk for debugging
+        audioChunksRef.current.forEach((chunk, index) => {
+          console.log(`[VoiceRecorder] Chunk ${index}: size=${chunk.size}, type=${chunk.type}`);
+        });
+        
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const duration = Math.floor((Date.now() - startTimeRef.current) / 1000);
-        console.log('[VoiceRecorder] Audio blob created:', { size: audioBlob.size, duration });
+        console.log('[VoiceRecorder] Audio blob created:', { size: audioBlob.size, duration, type: audioBlob.type });
+        
+        if (audioBlob.size === 0) {
+          console.error('[VoiceRecorder] Audio blob is empty!');
+          setErrorMessage('Recording failed - no audio data captured. Please try again.');
+          setRecordingState('error');
+          cleanupStream();
+          return;
+        }
         
         onAudioRecorded(audioBlob, duration);
         cleanupStream();
@@ -299,8 +341,8 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       };
 
       // Start recording
-      console.log('[VoiceRecorder] Starting MediaRecorder with 100ms intervals...');
-      mediaRecorder.start(100); // Collect data every 100ms
+      console.log('[VoiceRecorder] Starting MediaRecorder with 1000ms intervals...');
+      mediaRecorder.start(1000); // Collect data every 1000ms (1 second)
       console.log('[VoiceRecorder] MediaRecorder started, setting state to recording');
       setRecordingState('recording');
       startTimer();
@@ -328,8 +370,35 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && recordingState === 'recording') {
+      console.log('[VoiceRecorder] Stopping recording...');
+      
+      // Check if recording time is sufficient
+      const elapsedTime = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      console.log('[VoiceRecorder] Recording duration:', elapsedTime, 'seconds');
+      
+      if (elapsedTime < 1) {
+        console.warn('[VoiceRecorder] Recording too short, extending to 1 second...');
+        // Don't stop yet, let it record for at least 1 second
+        setTimeout(() => {
+          if (mediaRecorderRef.current && recordingState === 'recording') {
+            console.log('[VoiceRecorder] Now stopping after minimum duration');
+            setRecordingState('stopping');
+            stopTimer();
+            mediaRecorderRef.current.stop();
+          }
+        }, 1000 - (Date.now() - startTimeRef.current));
+        return;
+      }
+      
       setRecordingState('stopping');
       stopTimer();
+      
+      // Request any remaining data before stopping
+      if (mediaRecorderRef.current.state === 'recording') {
+        console.log('[VoiceRecorder] Requesting final data before stop...');
+        mediaRecorderRef.current.requestData();
+      }
+      
       mediaRecorderRef.current.stop();
     }
   }, [recordingState, stopTimer]);

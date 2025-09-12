@@ -36,6 +36,15 @@ export default async function handler(
   }
 
   try {
+    // Check if OpenAI API key is configured
+    if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'your_openai_api_key_here') {
+      res.status(503).json({
+        success: false,
+        error: 'Transcription service unavailable: OpenAI API key not configured. Please set OPENAI_API_KEY environment variable.'
+      } as TranscriptionResponse);
+      return;
+    }
+
     // Validate content type
     const contentType = req.headers['content-type'];
     if (!contentType || !contentType.startsWith('multipart/form-data')) {
@@ -52,6 +61,15 @@ export default async function handler(
       res.status(400).json({
         success: false,
         error: 'No audio file provided'
+      } as TranscriptionResponse);
+      return;
+    }
+
+    // Check if the audio file has content
+    if (audioFile.size === 0) {
+      res.status(400).json({
+        success: false,
+        error: 'Audio file is empty. Please record some audio before submitting.'
       } as TranscriptionResponse);
       return;
     }
