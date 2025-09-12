@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import type { UserRole } from '../types';
-import { CreateReportModal, OrganizationTree, ManagerView } from '../components';
+import { CreateReportModal, OrganizationTree, ManagerView, ChatInterface } from '../components';
 import { reportStorage } from '../services';
 import type { StoredReport } from '../services';
 import { ORGANIZATION_USERS } from '../data';
@@ -428,7 +428,7 @@ const DashboardPage: React.FC = () => {
     const today = new Date();
     return today.toISOString().split('T')[0]; // YYYY-MM-DD format
   });
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [, setSelectedUserId] = useState<string | null>(null);
 
   useEffect(() => {
     // Get role from session storage
@@ -621,9 +621,18 @@ const DashboardPage: React.FC = () => {
             </TimeFrameButtons>
           </TimeFrameControls>
 
+          {/* Chat Interface for Leadership Roles */}
+          {['Manager', 'Director', 'VP', 'CTO'].includes(currentRole) && (
+            <ChatInterface
+              currentUserId={currentUserId || undefined}
+              currentUserRole={currentRole}
+              selectedDate={selectedDate}
+            />
+          )}
+
           <OrganizationTree
             currentUserRole={currentRole}
-            currentUserId={currentUserId}
+            currentUserId={currentUserId || undefined}
             selectedDate={selectedDate}
             onUserSelect={handleUserSelect}
           />

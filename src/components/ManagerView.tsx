@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import styled from 'styled-components';
 import type { User, UserRole, Report } from '../types';
-import { getDirectReports, getTeamReports, DEMO_REPORTS } from '../data';
+import { getDirectReports, getTeamReports } from '../data';
 import { reportAggregationService } from '../services';
 
 interface ManagerViewProps {

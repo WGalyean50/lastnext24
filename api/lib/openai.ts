@@ -35,6 +35,13 @@ export class SummarizationError extends OpenAIError {
   }
 }
 
+export class ChatError extends OpenAIError {
+  constructor(message: string, originalError?: unknown) {
+    super(message, originalError);
+    this.name = 'ChatError';
+  }
+}
+
 // Helper function to handle OpenAI API errors
 export const handleOpenAIError = (error: unknown, operation: string): never => {
   if (error instanceof OpenAI.APIError) {

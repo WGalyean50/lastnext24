@@ -39,7 +39,7 @@ interface SummarizeApiResponse {
 }
 
 class ReportAggregationService {
-  private readonly API_BASE_URL = '';
+  // private readonly API_BASE_URL = '';
 
   /**
    * Aggregates team reports into a summary for upward reporting
@@ -153,7 +153,7 @@ class ReportAggregationService {
   private async performClientSideAggregation(
     reports: Report[],
     teamMembers: User[],
-    managerRole: UserRole,
+    _managerRole: UserRole,
     date: string
   ): Promise<{ summary: string; content: string; highlights: string[] }> {
     const reportingRate = Math.round((reports.length / teamMembers.length) * 100);
@@ -200,7 +200,7 @@ class ReportAggregationService {
   /**
    * Generate overview text based on reports
    */
-  private generateOverviewText(reports: Report[], reportingRate: number): string {
+  private generateOverviewText(_reports: Report[], reportingRate: number): string {
     if (reportingRate >= 80) {
       return 'Team is actively engaged with strong communication and progress across multiple initiatives.';
     } else if (reportingRate >= 60) {
@@ -215,7 +215,7 @@ class ReportAggregationService {
   /**
    * Generate team status summary
    */
-  private generateTeamStatus(reports: Report[], teamMembers: User[]): string {
+  private generateTeamStatus(reports: Report[], _teamMembers: User[]): string {
     const totalWords = reports.reduce((sum, report) => sum + report.content.split(' ').length, 0);
     const avgWordsPerReport = Math.round(totalWords / Math.max(reports.length, 1));
     
