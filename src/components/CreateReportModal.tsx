@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import VoiceRecorder from './VoiceRecorder';
 import { TranscriptionService } from '../services/transcriptionService';
 
@@ -275,17 +275,17 @@ const AudioStatus = styled.div<{ variant?: 'success' | 'loading' | 'error' }>`
   }}
 `;
 
+const loadingDotsAnimation = keyframes`
+  0%, 20% { content: ''; }
+  40% { content: '.'; }
+  60% { content: '..'; }
+  80%, 100% { content: '...'; }
+`;
+
 const LoadingDots = styled.span`
   &::after {
     content: '';
-    animation: loading-dots 1.5s infinite;
-  }
-  
-  @keyframes loading-dots {
-    0%, 20% { content: ''; }
-    40% { content: '.'; }
-    60% { content: '..'; }
-    80%, 100% { content: '...'; }
+    animation: ${loadingDotsAnimation} 1.5s infinite;
   }
 `;
 
@@ -350,18 +350,21 @@ const CreateReportModal: React.FC<CreateReportModalProps> = ({
     setRecordingDuration(duration);
     setTranscriptionError('');
     
-    // Start transcription automatically
+    // For now, skip transcription to avoid API errors during demo
+    // Transcription will work once OpenAI API key is properly configured
+    console.log('Audio recorded:', { duration, size: blob.size });
+    console.log('Transcription available when OpenAI API key is configured');
+    
+    // Uncomment below when ready to test transcription:
+    /*
     setIsTranscribing(true);
     
     try {
       const result = await TranscriptionService.transcribeAudio(blob);
       
       if (result.success && result.transcription) {
-        // Add transcribed text to the content area
         const transcribedText = result.transcription.trim();
         if (transcribedText) {
-          // If content area is empty, set the transcription
-          // If it has content, append with a separator
           setContent(prevContent => {
             const existing = prevContent.trim();
             if (!existing) {
@@ -376,10 +379,11 @@ const CreateReportModal: React.FC<CreateReportModalProps> = ({
       }
     } catch (error) {
       console.error('Transcription failed:', error);
-      setTranscriptionError('Failed to transcribe audio. Please try again.');
+      setTranscriptionError('Transcription temporarily unavailable. Audio still recorded.');
     } finally {
       setIsTranscribing(false);
     }
+    */
   };
 
   const handleSubmit = (e: React.FormEvent) => {
