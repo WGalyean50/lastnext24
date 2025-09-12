@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import type { UserRole } from '../types';
+import { CreateReportModal } from '../components';
 
 const DashboardContainer = styled.div`
   min-height: 100vh;
@@ -115,6 +116,7 @@ const PlaceholderCard = styled.div`
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [currentRole, setCurrentRole] = useState<UserRole | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     // Get role from session storage
@@ -133,8 +135,22 @@ const DashboardPage: React.FC = () => {
   };
 
   const handleNewReport = () => {
-    // TODO: Open new report modal
-    console.log('Opening new report modal...');
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleSubmitReport = (reportData: {
+    title?: string;
+    content: string;
+    date: string;
+  }) => {
+    // TODO: Implement report storage logic
+    console.log('Submitting report:', reportData);
+    // For now, just close the modal
+    setIsModalOpen(false);
   };
 
   if (!currentRole) {
@@ -180,6 +196,12 @@ const DashboardPage: React.FC = () => {
           <p>This is where the main application features will be implemented in subsequent phases.</p>
         </PlaceholderCard>
       </MainContent>
+
+      <CreateReportModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onSubmit={handleSubmitReport}
+      />
     </DashboardContainer>
   );
 };
