@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 
 interface VoiceRecorderProps {
   onAudioRecorded: (audioBlob: Blob, duration: number) => void;
@@ -77,7 +77,7 @@ const RecordButton = styled.button<{
           cursor: wait;
         `;
       case 'recording':
-        return `
+        return css`
           background: #ef4444;
           border-color: #ef4444;
           color: white;
@@ -260,28 +260,34 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 
       // Check supported MIME types and use fallback if needed
       console.log('[VoiceRecorder] Checking MIME type support...');
-      let mimeType = 'audio/webm;codecs=opus';
-      console.log(`[VoiceRecorder] Testing ${mimeType}:`, MediaRecorder.isTypeSupported(mimeType));
+      let detectedMimeType = '';
+      let options = {};
       
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        console.log('[VoiceRecorder] Opus not supported, trying fallbacks...');
-        if (MediaRecorder.isTypeSupported('audio/webm')) {
-          mimeType = 'audio/webm';
-          console.log('[VoiceRecorder] Using audio/webm');
-        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-          mimeType = 'audio/mp4';
-          console.log('[VoiceRecorder] Using audio/mp4');
-        } else {
-          mimeType = ''; // Let browser choose
-          console.log('[VoiceRecorder] Using browser default MIME type');
+      // Try different MIME types in order of preference for Safari/WebKit compatibility
+      const mimeTypes = [
+        'audio/mp4',
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/ogg;codecs=opus',
+        ''
+      ];
+      
+      for (const type of mimeTypes) {
+        if (!type || MediaRecorder.isTypeSupported(type)) {
+          detectedMimeType = type;
+          console.log('[VoiceRecorder] Using MIME type:', detectedMimeType || 'browser default');
+          break;
         }
-      } else {
-        console.log('[VoiceRecorder] Using preferred opus codec');
+        console.log('[VoiceRecorder] MIME type not supported:', type);
+      }
+      
+      if (detectedMimeType) {
+        options = { mimeType: detectedMimeType };
       }
 
       // Create MediaRecorder
-      console.log('[VoiceRecorder] Creating MediaRecorder with options:', mimeType ? { mimeType } : {});
-      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+      console.log('[VoiceRecorder] Creating MediaRecorder with options:', options);
+      const mediaRecorder = new MediaRecorder(stream, options);
       console.log('[VoiceRecorder] MediaRecorder created successfully');
 
       mediaRecorderRef.current = mediaRecorder;
@@ -290,11 +296,12 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       console.log('[VoiceRecorder] Setting up MediaRecorder event handlers...');
       mediaRecorder.ondataavailable = (event) => {
         console.log('[VoiceRecorder] Data available:', event.data.size, 'bytes', 'type:', event.data.type);
+        // Always push data, even if empty, to see what we're getting
+        audioChunksRef.current.push(event.data);
         if (event.data && event.data.size > 0) {
-          console.log('[VoiceRecorder] Adding chunk to audioChunks array');
-          audioChunksRef.current.push(event.data);
+          console.log('[VoiceRecorder] Adding valid chunk to audioChunks array');
         } else {
-          console.warn('[VoiceRecorder] Received empty or invalid data chunk');
+          console.warn('[VoiceRecorder] Received empty chunk - this may be normal for Safari');
         }
       };
 
@@ -315,7 +322,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
           console.log(`[VoiceRecorder] Chunk ${index}: size=${chunk.size}, type=${chunk.type}`);
         });
         
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioBlob = new Blob(audioChunksRef.current, { type: detectedMimeType || 'audio/webm' });
         const duration = Math.floor((Date.now() - startTimeRef.current) / 1000);
         console.log('[VoiceRecorder] Audio blob created:', { size: audioBlob.size, duration, type: audioBlob.type });
         
@@ -341,8 +348,8 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       };
 
       // Start recording
-      console.log('[VoiceRecorder] Starting MediaRecorder with 1000ms intervals...');
-      mediaRecorder.start(1000); // Collect data every 1000ms (1 second)
+      console.log('[VoiceRecorder] Starting MediaRecorder with continuous recording...');
+      mediaRecorder.start(); // Collect data when stopped (more compatible with Safari)
       console.log('[VoiceRecorder] MediaRecorder started, setting state to recording');
       setRecordingState('recording');
       startTimer();
