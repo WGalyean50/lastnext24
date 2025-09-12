@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import VoiceRecorder from './VoiceRecorder';
-import { TranscriptionService } from '../services/transcriptionService';
+// import { TranscriptionService } from '../services/transcriptionService'; // Uncomment when enabling transcription
 
 interface CreateReportModalProps {
   isOpen: boolean;
