@@ -305,6 +305,37 @@
 
 ---
 
+## Remedial Tasks & Bug Fixes
+
+### Known Issues to Address
+**Status**: Pending resolution
+
+- [ ] **Transcription Integration**: Re-enable OpenAI transcription functionality
+  - Issue: TranscriptionService import commented out to fix production build
+  - Solution: Uncomment import and transcription code after API key configuration
+  - Location: `src/components/CreateReportModal.tsx` lines 4, 359-386
+  - Dependencies: OpenAI API key in environment variables
+
+- [ ] **Browser Navigation 404 Error**: Fix page not found when using browser back button
+  - Issue: Users get 404 error when navigating back in browser history
+  - Likely cause: React Router configuration or Vercel routing setup
+  - Location: Routing configuration in `src/` and/or `vercel.json`
+  - Impact: Poor user experience, breaks expected browser behavior
+
+- [ ] **Production Build Optimization**: Address npm audit vulnerabilities
+  - Issue: 4 vulnerabilities (2 moderate, 2 high) reported during build
+  - Solution: Run `npm audit fix` and test for breaking changes
+  - Impact: Security and dependency management
+
+### Future Enhancements to Consider
+- [ ] Add error boundaries for better error handling
+- [ ] Implement proper loading states for all async operations
+- [ ] Add unit tests for critical components
+- [ ] Optimize bundle size (currently 273.80 kB)
+- [ ] Add offline support with service workers
+
+---
+
 ## Notes:
 - **Parallel execution** clearly marked where multiple tasks can be worked on simultaneously
 - **Sequential dependencies** ensure proper build order

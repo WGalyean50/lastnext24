@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import type { UserRole } from '../types';
-import { CreateReportModal } from '../components';
+import { CreateReportModal, OrganizationTree, ManagerView } from '../components';
 import { reportStorage } from '../services';
 import type { StoredReport } from '../services';
+import { ORGANIZATION_USERS } from '../data';
 
 const DashboardContainer = styled.div`
   min-height: 100vh;
@@ -132,12 +133,19 @@ const ChangeRoleButton = styled.button`
   }
 `;
 
-const MainContent = styled.main`
+const ContentArea = styled.div`
   flex: 1;
+  display: flex;
+  gap: 2rem;
   padding: 2rem;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   width: 100%;
+  
+  @media (max-width: 1024px) {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
   
   @media (max-width: 768px) {
     padding: 1.5rem 1rem;
@@ -145,6 +153,29 @@ const MainContent = styled.main`
   
   @media (max-width: 480px) {
     padding: 1rem 0.75rem;
+  }
+`;
+
+const Sidebar = styled.aside`
+  width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  
+  @media (max-width: 1024px) {
+    width: 100%;
+    order: 2;
+  }
+`;
+
+const MainContent = styled.main`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  
+  @media (max-width: 1024px) {
+    order: 1;
   }
 `;
 
@@ -300,17 +331,117 @@ const EmptyState = styled.div`
   }
 `;
 
+const TimeFrameControls = styled.div`
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+`;
+
+const TimeFrameHeader = styled.div`
+  padding: 1rem 1.5rem;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  font-weight: 600;
+  color: #1e293b;
+`;
+
+const TimeFrameButtons = styled.div`
+  padding: 1rem;
+  display: flex;
+  gap: 0.5rem;
+`;
+
+const TimeFrameButton = styled.button<{ isActive: boolean }>`
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: ${props => props.isActive ? '#3b82f6' : 'white'};
+  color: ${props => props.isActive ? 'white' : '#374151'};
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #3b82f6;
+    color: ${props => props.isActive ? 'white' : '#3b82f6'};
+  }
+`;
+
+const PreviousReportsCard = styled.div`
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+`;
+
+const PreviousReportsHeader = styled.div`
+  padding: 1rem 1.5rem;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  font-weight: 600;
+  color: #1e293b;
+`;
+
+const PreviousReportsList = styled.div`
+  max-height: 200px;
+  overflow-y: auto;
+`;
+
+const PreviousReportItem = styled.div`
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: background 0.2s;
+  
+  &:hover {
+    background: #f8fafc;
+  }
+  
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const PreviousReportDate = styled.div`
+  font-size: 0.75rem;
+  color: #64748b;
+`;
+
+const PreviousReportContent = styled.div`
+  font-size: 0.875rem;
+  color: #374151;
+  margin-top: 0.25rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [currentRole, setCurrentRole] = useState<UserRole | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [reports, setReports] = useState<StoredReport[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const today = new Date();
+    return today.toISOString().split('T')[0]; // YYYY-MM-DD format
+  });
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   useEffect(() => {
     // Get role from session storage
     const storedRole = sessionStorage.getItem('selectedRole') as UserRole;
     if (storedRole) {
       setCurrentRole(storedRole);
+      
+      // Set a demo user ID based on role for demo purposes
+      const demoUser = ORGANIZATION_USERS.find(user => user.role === storedRole);
+      if (demoUser) {
+        setCurrentUserId(demoUser.id);
+      }
+      
       // Load reports for current user
       loadUserReports();
     } else {
@@ -369,6 +500,24 @@ const DashboardPage: React.FC = () => {
     }
   };
 
+  const handleTimeFrameChange = (timeFrame: 'today' | 'yesterday') => {
+    const today = new Date();
+    if (timeFrame === 'yesterday') {
+      today.setDate(today.getDate() - 1);
+    }
+    setSelectedDate(today.toISOString().split('T')[0]);
+  };
+
+  const handleUserSelect = (userId: string) => {
+    setSelectedUserId(userId);
+  };
+
+  const getYesterdayDate = () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return yesterday.toISOString().split('T')[0];
+  };
+
   if (!currentRole) {
     return <div>Loading...</div>;
   }
@@ -399,46 +548,110 @@ const DashboardPage: React.FC = () => {
         </HeaderActions>
       </Header>
       
-      <MainContent>
-        <WelcomeCard>
-          <WelcomeTitle>Welcome, {currentRole}!</WelcomeTitle>
-          <WelcomeText>
-            {getRoleDescription(currentRole)}
-          </WelcomeText>
-        </WelcomeCard>
-        
-        <ReportsSection>
-          <SectionTitle>Your Reports</SectionTitle>
-          {reports.length > 0 ? (
-            <ReportsList>
-              {reports.map((report) => (
-                <ReportCard key={report.id}>
-                  <ReportHeader>
-                    <ReportTitle>
-                      {report.title || `Report for ${new Date(report.date).toLocaleDateString()}`}
-                    </ReportTitle>
-                    <ReportDate>{new Date(report.date).toLocaleDateString()}</ReportDate>
-                  </ReportHeader>
-                  <ReportContent>
-                    {report.content || 'No content provided'}
-                  </ReportContent>
-                  <ReportMeta>
-                    <span>Created: {new Date(report.created_at).toLocaleString()}</span>
-                    {report.has_audio && (
-                      <AudioIndicator>🎤 Audio recorded</AudioIndicator>
-                    )}
-                  </ReportMeta>
-                </ReportCard>
-              ))}
-            </ReportsList>
-          ) : (
-            <EmptyState>
-              <h3>No Reports Yet</h3>
-              <p>Click the "New Report" button above to create your first report.</p>
-            </EmptyState>
+      <ContentArea>
+        <MainContent>
+          <WelcomeCard>
+            <WelcomeTitle>Welcome, {currentRole}!</WelcomeTitle>
+            <WelcomeText>
+              {getRoleDescription(currentRole)}
+            </WelcomeText>
+          </WelcomeCard>
+          
+          {/* Manager/Leadership View */}
+          {['Manager', 'Director', 'VP', 'CTO'].includes(currentRole) && currentUserId && (
+            <ManagerView
+              currentUserId={currentUserId}
+              currentUserRole={currentRole}
+              selectedDate={selectedDate}
+              onGenerateReport={(content) => {
+                console.log('Generated report:', content);
+              }}
+            />
           )}
-        </ReportsSection>
-      </MainContent>
+
+          <ReportsSection>
+            <SectionTitle>Your Reports</SectionTitle>
+            {reports.length > 0 ? (
+              <ReportsList>
+                {reports.map((report) => (
+                  <ReportCard key={report.id}>
+                    <ReportHeader>
+                      <ReportTitle>
+                        {report.title || `Report for ${new Date(report.date).toLocaleDateString()}`}
+                      </ReportTitle>
+                      <ReportDate>{new Date(report.date).toLocaleDateString()}</ReportDate>
+                    </ReportHeader>
+                    <ReportContent>
+                      {report.content || 'No content provided'}
+                    </ReportContent>
+                    <ReportMeta>
+                      <span>Created: {new Date(report.created_at).toLocaleString()}</span>
+                      {report.has_audio && (
+                        <AudioIndicator>🎤 Audio recorded</AudioIndicator>
+                      )}
+                    </ReportMeta>
+                  </ReportCard>
+                ))}
+              </ReportsList>
+            ) : (
+              <EmptyState>
+                <h3>No Reports Yet</h3>
+                <p>Click the "New Report" button above to create your first report.</p>
+              </EmptyState>
+            )}
+          </ReportsSection>
+        </MainContent>
+
+        <Sidebar>
+          <TimeFrameControls>
+            <TimeFrameHeader>Time Frame</TimeFrameHeader>
+            <TimeFrameButtons>
+              <TimeFrameButton
+                isActive={selectedDate === new Date().toISOString().split('T')[0]}
+                onClick={() => handleTimeFrameChange('today')}
+              >
+                Today
+              </TimeFrameButton>
+              <TimeFrameButton
+                isActive={selectedDate === getYesterdayDate()}
+                onClick={() => handleTimeFrameChange('yesterday')}
+              >
+                Yesterday
+              </TimeFrameButton>
+            </TimeFrameButtons>
+          </TimeFrameControls>
+
+          <OrganizationTree
+            currentUserRole={currentRole}
+            currentUserId={currentUserId}
+            selectedDate={selectedDate}
+            onUserSelect={handleUserSelect}
+          />
+
+          <PreviousReportsCard>
+            <PreviousReportsHeader>Previous Reports</PreviousReportsHeader>
+            <PreviousReportsList>
+              {reports.slice(0, 5).map((report) => (
+                <PreviousReportItem key={report.id}>
+                  <PreviousReportDate>
+                    {new Date(report.date).toLocaleDateString()}
+                  </PreviousReportDate>
+                  <PreviousReportContent>
+                    {report.title || report.content || 'No content'}
+                  </PreviousReportContent>
+                </PreviousReportItem>
+              ))}
+              {reports.length === 0 && (
+                <PreviousReportItem>
+                  <PreviousReportContent style={{ color: '#64748b', fontStyle: 'italic' }}>
+                    No reports yet
+                  </PreviousReportContent>
+                </PreviousReportItem>
+              )}
+            </PreviousReportsList>
+          </PreviousReportsCard>
+        </Sidebar>
+      </ContentArea>
 
       <CreateReportModal
         isOpen={isModalOpen}
