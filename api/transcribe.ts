@@ -148,15 +148,24 @@ export default async function handler(
 // Helper function to parse audio file from multipart form data
 async function parseAudioFile(req: VercelRequest): Promise<File | null> {
   try {
+    console.log('Starting form parsing...');
     const form = formidable({
       maxFileSize: 25 * 1024 * 1024, // 25MB max file size (OpenAI Whisper limit)
       multiples: false,
+      keepExtensions: true, // Keep original file extensions
+      allowEmptyFiles: false, // Don't allow empty files
     });
 
     return new Promise((resolve, reject) => {
       form.parse(req, (err, fields, files) => {
+        console.log('Form parsing completed');
+        console.log('Fields:', Object.keys(fields || {}));
+        console.log('Files:', Object.keys(files || {}));
+        
         if (err) {
           console.error('Formidable parse error:', err);
+          console.error('Error type:', err.name);
+          console.error('Error message:', err.message);
           resolve(null);
           return;
         }
@@ -165,22 +174,35 @@ async function parseAudioFile(req: VercelRequest): Promise<File | null> {
         const audioFile = files.audio;
         if (!audioFile) {
           console.error('No audio file found in request');
+          console.error('Available files:', Object.keys(files || {}));
           resolve(null);
           return;
         }
+        
+        console.log('Audio file found:', audioFile);
 
         try {
           // Handle both single file and array of files
           const file = Array.isArray(audioFile) ? audioFile[0] : audioFile;
+          console.log('Processing file:', {
+            isArray: Array.isArray(audioFile),
+            hasFilepath: !!(file && file.filepath),
+            originalFilename: file?.originalFilename,
+            mimetype: file?.mimetype,
+            size: file?.size
+          });
           
           if (!file || !file.filepath) {
-            console.error('Invalid file object');
+            console.error('Invalid file object - missing filepath');
+            console.error('File object:', file);
             resolve(null);
             return;
           }
 
+          console.log('Reading file from path:', file.filepath);
           // Read the file data
           const fileBuffer = readFileSync(file.filepath);
+          console.log('File buffer read successfully, size:', fileBuffer.length);
           
           // Determine the MIME type and clean it for OpenAI compatibility
           let mimeType = file.mimetype || 'audio/webm';
