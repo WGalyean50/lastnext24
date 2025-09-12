@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import VoiceRecorder from './VoiceRecorder';
 
 interface CreateReportModalProps {
   isOpen: boolean;
@@ -172,6 +173,32 @@ const Button = styled.button<{ variant?: 'primary' | 'secondary' }>`
   `}
 `;
 
+const AudioSection = styled.div`
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+`;
+
+const SectionTitle = styled.h3`
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 1rem 0;
+`;
+
+const AudioStatus = styled.div`
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  background: #ecfccb;
+  border: 1px solid #bef264;
+  color: #365314;
+  font-size: 0.875rem;
+  text-align: center;
+`;
+
 const CreateReportModal: React.FC<CreateReportModalProps> = ({
   isOpen,
   onClose,
@@ -180,6 +207,8 @@ const CreateReportModal: React.FC<CreateReportModalProps> = ({
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [date, setDate] = useState('');
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [recordingDuration, setRecordingDuration] = useState<number>(0);
 
   useEffect(() => {
     if (isOpen) {
@@ -194,6 +223,8 @@ const CreateReportModal: React.FC<CreateReportModalProps> = ({
       setTitle('');
       setContent('');
       setDate('');
+      setAudioBlob(null);
+      setRecordingDuration(0);
       document.body.style.overflow = 'unset';
     }
 
@@ -220,11 +251,18 @@ const CreateReportModal: React.FC<CreateReportModalProps> = ({
     };
   }, [isOpen, onClose]);
 
+  const handleAudioRecorded = (blob: Blob, duration: number) => {
+    setAudioBlob(blob);
+    setRecordingDuration(duration);
+    // TODO: In Phase 4.2, we'll send this to transcription API
+    console.log('Audio recorded:', { duration, size: blob.size });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!content.trim()) {
-      alert('Please enter report content');
+    if (!content.trim() && !audioBlob) {
+      alert('Please enter report content or record audio');
       return;
     }
 
@@ -291,16 +329,27 @@ const CreateReportModal: React.FC<CreateReportModalProps> = ({
             </FormField>
 
             <FormField>
-              <Label htmlFor="report-content">Report Content *</Label>
+              <Label htmlFor="report-content">Report Content</Label>
               <TextArea
                 id="report-content"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="What did you work on today? Share your progress, challenges, and plans..."
-                required
                 rows={6}
               />
             </FormField>
+
+            <AudioSection>
+              <SectionTitle>Voice Recording (Optional)</SectionTitle>
+              <VoiceRecorder 
+                onAudioRecorded={handleAudioRecorded}
+              />
+              {audioBlob && (
+                <AudioStatus>
+                  ✓ Audio recorded ({recordingDuration}s) - Ready to submit
+                </AudioStatus>
+              )}
+            </AudioSection>
 
             <ButtonGroup>
               <Button type="button" onClick={onClose}>
@@ -309,7 +358,7 @@ const CreateReportModal: React.FC<CreateReportModalProps> = ({
               <Button 
                 type="submit" 
                 variant="primary"
-                disabled={!content.trim()}
+                disabled={!content.trim() && !audioBlob}
               >
                 Create Report
               </Button>
