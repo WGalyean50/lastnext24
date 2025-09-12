@@ -137,13 +137,13 @@ export function withCache<T extends (...args: any[]) => Promise<any>>(
 ): T {
   return (async (...args: Parameters<T>): Promise<Awaited<ReturnType<T>>> => {
     // Create cache key from function arguments
-    const cacheKey = cache.constructor.createKey(keyPrefix, ...args);
+    const cacheKey = CacheService.createKey(keyPrefix, ...args);
 
     // Try to get from cache first
     const cachedResult = cache.get(cacheKey);
     if (cachedResult !== null) {
       console.log(`Cache hit for key: ${cacheKey}`);
-      return cachedResult;
+      return cachedResult as Awaited<ReturnType<T>>;
     }
 
     // Execute function and cache result
@@ -172,7 +172,7 @@ export function useCachedFunction<T extends (...args: any[]) => Promise<any>>(
   return {
     execute: cachedFn,
     invalidate: (...args: Parameters<T>) => {
-      const cacheKey = cache.constructor.createKey(keyPrefix, ...args);
+      const cacheKey = CacheService.createKey(keyPrefix, ...args);
       cache.delete(cacheKey);
     },
     clear: () => {

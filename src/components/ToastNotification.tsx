@@ -32,7 +32,7 @@ const ToastContainer = styled.div<{
   position: fixed;
   top: 1rem;
   right: 1rem;
-  z-index: ${theme.zIndex.toast || 1070};
+  z-index: 1070;
   min-width: 300px;
   max-width: 400px;
   padding: ${theme.spacing.md} ${theme.spacing.lg};

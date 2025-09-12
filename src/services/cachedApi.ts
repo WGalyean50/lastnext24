@@ -1,57 +1,15 @@
-import { cache, withCache } from './cache';
+import { cache, CacheService } from './cache';
 
 /**
  * Cached API service for LastNext24
  * Provides caching wrapper for API calls to reduce server load and improve UX
  */
 
-interface ApiResponse<T = any> {
-  data: T;
-  status: number;
-  message?: string;
-}
-
 class CachedApiService {
-  private readonly baseUrl = '';
   private readonly DEFAULT_CACHE_TIME = 2 * 60 * 1000; // 2 minutes for API calls
   private readonly TRANSCRIPTION_CACHE_TIME = 10 * 60 * 1000; // 10 minutes for transcriptions
   private readonly CHAT_CACHE_TIME = 5 * 60 * 1000; // 5 minutes for chat responses
 
-  /**
-   * Generic API call with caching
-   */
-  private async apiCall<T>(
-    endpoint: string,
-    options: RequestInit = {},
-    cacheKey: string,
-    cacheTTL: number = this.DEFAULT_CACHE_TIME
-  ): Promise<T> {
-    // Check cache first
-    const cachedResponse = cache.get<T>(cacheKey);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-
-    // Make API call
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-      },
-      ...options
-    });
-
-    if (!response.ok) {
-      throw new Error(`API call failed: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    
-    // Cache successful responses
-    cache.set(cacheKey, data, cacheTTL);
-    
-    return data;
-  }
 
   /**
    * Cached transcription service
@@ -59,7 +17,7 @@ class CachedApiService {
    */
   async transcribeAudio(audioBlob: Blob): Promise<{ text: string; duration?: number }> {
     // Create cache key based on file size and type (simple hashing)
-    const cacheKey = cache.constructor.createKey(
+    const cacheKey = CacheService.createKey(
       'transcription', 
       audioBlob.size, 
       audioBlob.type,
@@ -103,7 +61,7 @@ class CachedApiService {
   ): Promise<{ summary: string; tokens?: number }> {
     // Create cache key based on report content and mode
     const contentHash = await this.hashContent(JSON.stringify(reports));
-    const cacheKey = cache.constructor.createKey('summarize', mode, contentHash);
+    const cacheKey = CacheService.createKey('summarize', mode, contentHash);
 
     const cachedResult = cache.get<{ summary: string; tokens?: number }>(cacheKey);
     if (cachedResult) {
@@ -137,7 +95,7 @@ class CachedApiService {
     context: any = {},
     selectedDate?: string
   ): Promise<{ response: string; sources?: any[] }> {
-    const cacheKey = cache.constructor.createKey('chat', query, selectedDate, JSON.stringify(context));
+    const cacheKey = CacheService.createKey('chat', query, selectedDate, JSON.stringify(context));
 
     const cachedResult = cache.get<{ response: string; sources?: any[] }>(cacheKey);
     if (cachedResult) {

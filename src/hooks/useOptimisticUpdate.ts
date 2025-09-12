@@ -153,7 +153,7 @@ export function useOptimisticList<T extends { id: string }>(
           return [...state.data, newItem];
         },
         {
-          onError: (error, rollbackData) => {
+          onError: (error) => {
             console.error('Failed to add item optimistically:', error);
           }
         }
@@ -177,7 +177,7 @@ export function useOptimisticList<T extends { id: string }>(
           );
         },
         {
-          onError: (error, rollbackData) => {
+          onError: (error) => {
             console.error('Failed to update item optimistically:', error);
           }
         }
@@ -197,7 +197,7 @@ export function useOptimisticList<T extends { id: string }>(
           return state.data.filter(item => item.id !== id);
         },
         {
-          onError: (error, rollbackData) => {
+          onError: (error) => {
             console.error('Failed to delete item optimistically:', error);
           }
         }
