@@ -198,13 +198,39 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   }, []);
 
   const startRecording = useCallback(async () => {
+    console.log('[VoiceRecorder] Starting recording process...');
+    
     try {
+      console.log('[VoiceRecorder] Setting state to requesting-permission');
       setRecordingState('requesting-permission');
       setErrorMessage('');
       audioChunksRef.current = [];
       setRecordingTime(0);
 
+      // Check if we're in a secure context (HTTPS or localhost)
+      if (!window.isSecureContext) {
+        console.error('[VoiceRecorder] Not in secure context');
+        throw new Error('Audio recording requires HTTPS or localhost');
+      }
+
+      // Check if MediaRecorder is supported
+      console.log('[VoiceRecorder] Checking MediaRecorder support...');
+      if (!window.MediaRecorder) {
+        console.error('[VoiceRecorder] MediaRecorder not supported');
+        throw new Error('MediaRecorder is not supported in this browser');
+      }
+      console.log('[VoiceRecorder] MediaRecorder is supported');
+
+      // Check if getUserMedia is supported
+      console.log('[VoiceRecorder] Checking getUserMedia support...');
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.error('[VoiceRecorder] getUserMedia not supported');
+        throw new Error('Microphone access is not supported in this browser');
+      }
+      console.log('[VoiceRecorder] getUserMedia is supported');
+
       // Request microphone permission
+      console.log('[VoiceRecorder] Requesting microphone permission...');
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -212,26 +238,52 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
           autoGainControl: true,
         }
       });
+      console.log('[VoiceRecorder] Microphone permission granted, stream obtained');
 
       streamRef.current = stream;
 
+      // Check supported MIME types and use fallback if needed
+      console.log('[VoiceRecorder] Checking MIME type support...');
+      let mimeType = 'audio/webm;codecs=opus';
+      console.log(`[VoiceRecorder] Testing ${mimeType}:`, MediaRecorder.isTypeSupported(mimeType));
+      
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        console.log('[VoiceRecorder] Opus not supported, trying fallbacks...');
+        if (MediaRecorder.isTypeSupported('audio/webm')) {
+          mimeType = 'audio/webm';
+          console.log('[VoiceRecorder] Using audio/webm');
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          mimeType = 'audio/mp4';
+          console.log('[VoiceRecorder] Using audio/mp4');
+        } else {
+          mimeType = ''; // Let browser choose
+          console.log('[VoiceRecorder] Using browser default MIME type');
+        }
+      } else {
+        console.log('[VoiceRecorder] Using preferred opus codec');
+      }
+
       // Create MediaRecorder
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
+      console.log('[VoiceRecorder] Creating MediaRecorder with options:', mimeType ? { mimeType } : {});
+      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+      console.log('[VoiceRecorder] MediaRecorder created successfully');
 
       mediaRecorderRef.current = mediaRecorder;
 
       // Set up event handlers
+      console.log('[VoiceRecorder] Setting up MediaRecorder event handlers...');
       mediaRecorder.ondataavailable = (event) => {
+        console.log('[VoiceRecorder] Data available:', event.data.size, 'bytes');
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
         }
       };
 
       mediaRecorder.onstop = () => {
+        console.log('[VoiceRecorder] Recording stopped, processing audio...');
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const duration = Math.floor((Date.now() - startTimeRef.current) / 1000);
+        console.log('[VoiceRecorder] Audio blob created:', { size: audioBlob.size, duration });
         
         onAudioRecorded(audioBlob, duration);
         cleanupStream();
@@ -240,16 +292,19 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
       };
 
       mediaRecorder.onerror = (event) => {
-        console.error('MediaRecorder error:', event);
+        console.error('[VoiceRecorder] MediaRecorder error:', event);
         setErrorMessage('Recording failed. Please try again.');
         setRecordingState('error');
         cleanupStream();
       };
 
       // Start recording
+      console.log('[VoiceRecorder] Starting MediaRecorder with 100ms intervals...');
       mediaRecorder.start(100); // Collect data every 100ms
+      console.log('[VoiceRecorder] MediaRecorder started, setting state to recording');
       setRecordingState('recording');
       startTimer();
+      console.log('[VoiceRecorder] Recording process completed successfully');
 
     } catch (error) {
       console.error('Error starting recording:', error);
@@ -280,10 +335,20 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   }, [recordingState, stopTimer]);
 
   const handleButtonClick = () => {
-    if (recordingState === 'idle' || recordingState === 'error') {
-      startRecording();
-    } else if (recordingState === 'recording') {
-      stopRecording();
+    console.log('[VoiceRecorder] Button clicked, current state:', recordingState);
+    
+    try {
+      if (recordingState === 'idle' || recordingState === 'error') {
+        console.log('[VoiceRecorder] Starting recording...');
+        startRecording();
+      } else if (recordingState === 'recording') {
+        console.log('[VoiceRecorder] Stopping recording...');
+        stopRecording();
+      }
+    } catch (error) {
+      console.error('[VoiceRecorder] Error in handleButtonClick:', error);
+      setErrorMessage('Failed to start recording: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      setRecordingState('error');
     }
   };
 
@@ -320,11 +385,36 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     }
   };
 
-  // Cleanup on unmount
+  // Cleanup on unmount and error handling
   React.useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      console.error('[VoiceRecorder] Window error:', event.error);
+      if (event.error && event.error.message && event.error.message.includes('recording')) {
+        console.error('[VoiceRecorder] Recording-related error caught');
+        setErrorMessage('Recording error: ' + event.error.message);
+        setRecordingState('error');
+        cleanupStream();
+      }
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error('[VoiceRecorder] Unhandled promise rejection:', event.reason);
+      if (event.reason && event.reason.toString().includes('recording')) {
+        console.error('[VoiceRecorder] Recording-related promise rejection caught');
+        setErrorMessage('Recording error: ' + event.reason.toString());
+        setRecordingState('error');
+        cleanupStream();
+      }
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    
     return () => {
       stopTimer();
       cleanupStream();
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
     };
   }, [stopTimer, cleanupStream]);
 

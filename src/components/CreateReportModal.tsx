@@ -346,40 +346,53 @@ const CreateReportModal: React.FC<CreateReportModalProps> = ({
   }, [isOpen, onClose]);
 
   const handleAudioRecorded = async (blob: Blob, duration: number) => {
-    setAudioBlob(blob);
-    setRecordingDuration(duration);
-    setTranscriptionError('');
-    
-    // For now, skip transcription to avoid API errors during demo
-    // Transcription will work once OpenAI API key is properly configured
-    console.log('Audio recorded:', { duration, size: blob.size });
-    console.log('Transcription available when OpenAI API key is configured');
-    
-    setIsTranscribing(true);
+    console.log('[CreateReportModal] handleAudioRecorded called with:', { duration, size: blob.size });
     
     try {
-      const result = await TranscriptionService.transcribeAudio(blob);
+      setAudioBlob(blob);
+      setRecordingDuration(duration);
+      setTranscriptionError('');
       
-      if (result.success && result.transcription) {
-        const transcribedText = result.transcription.trim();
-        if (transcribedText) {
-          setContent(prevContent => {
-            const existing = prevContent.trim();
-            if (!existing) {
-              return transcribedText;
-            } else {
-              return `${existing}\n\n[Voice recording]: ${transcribedText}`;
-            }
-          });
+      // For now, skip transcription to avoid API errors during demo
+      // Transcription will work once OpenAI API key is properly configured
+      console.log('[CreateReportModal] Audio recorded successfully:', { duration, size: blob.size });
+      console.log('[CreateReportModal] Transcription available when OpenAI API key is configured');
+      
+      console.log('[CreateReportModal] Setting transcribing state to true');
+      setIsTranscribing(true);
+      
+      try {
+        console.log('[CreateReportModal] Starting transcription...');
+        const result = await TranscriptionService.transcribeAudio(blob);
+        console.log('[CreateReportModal] Transcription result:', result);
+        
+        if (result.success && result.transcription) {
+          const transcribedText = result.transcription.trim();
+          if (transcribedText) {
+            console.log('[CreateReportModal] Adding transcription to content');
+            setContent(prevContent => {
+              const existing = prevContent.trim();
+              if (!existing) {
+                return transcribedText;
+              } else {
+                return `${existing}\n\n[Voice recording]: ${transcribedText}`;
+              }
+            });
+          }
+        } else {
+          console.log('[CreateReportModal] Transcription failed:', result.error);
+          setTranscriptionError(result.error || 'Failed to transcribe audio');
         }
-      } else {
-        setTranscriptionError(result.error || 'Failed to transcribe audio');
+      } catch (error) {
+        console.error('[CreateReportModal] Transcription error:', error);
+        setTranscriptionError('Transcription service unavailable (OpenAI API key not configured). Audio still recorded.');
+      } finally {
+        console.log('[CreateReportModal] Setting transcribing state to false');
+        setIsTranscribing(false);
       }
     } catch (error) {
-      console.error('Transcription failed:', error);
-      setTranscriptionError('Transcription service unavailable (OpenAI API key not configured). Audio still recorded.');
-    } finally {
-      setIsTranscribing(false);
+      console.error('[CreateReportModal] Error in handleAudioRecorded:', error);
+      throw error; // Re-throw to let ErrorBoundary catch it
     }
   };
 

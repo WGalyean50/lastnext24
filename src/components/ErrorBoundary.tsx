@@ -179,9 +179,9 @@ export class ErrorBoundary extends Component<Props, State> {
             </AnimatedButton>
           </ButtonGroup>
 
-          {process.env.NODE_ENV === 'development' && error && (
+          {error && (
             <ErrorDetails>
-              <summary>Error Details (Development)</summary>
+              <summary>Error Details</summary>
               <div>
                 <strong>Error:</strong> {error.message}
                 <pre>{error.stack}</pre>
