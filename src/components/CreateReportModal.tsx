@@ -385,7 +385,10 @@ const CreateReportModal: React.FC<CreateReportModalProps> = ({
         }
       } catch (error) {
         console.error('[CreateReportModal] Transcription error:', error);
-        setTranscriptionError('Transcription service unavailable (OpenAI API key not configured). Audio still recorded.');
+        const errorMessage = error instanceof Error && error.message.includes('API key') 
+          ? 'Transcription service unavailable: OpenAI API key not configured. Audio recorded successfully.'
+          : 'Transcription service temporarily unavailable. Audio recorded successfully.';
+        setTranscriptionError(errorMessage);
       } finally {
         console.log('[CreateReportModal] Setting transcribing state to false');
         setIsTranscribing(false);
@@ -497,6 +500,11 @@ const CreateReportModal: React.FC<CreateReportModalProps> = ({
               {audioBlob && !isTranscribing && !transcriptionError && (
                 <AudioStatus variant="success">
                   ✓ Audio recorded ({recordingDuration}s) and transcribed - Ready to submit
+                </AudioStatus>
+              )}
+              {audioBlob && !isTranscribing && transcriptionError && (
+                <AudioStatus variant="success">
+                  ✓ Audio recorded successfully ({recordingDuration}s, {Math.round(audioBlob.size / 1024)}KB) - Ready to submit
                 </AudioStatus>
               )}
             </AudioSection>
