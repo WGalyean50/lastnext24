@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import VoiceRecorder from './VoiceRecorder';
-// import { TranscriptionService } from '../services/transcriptionService'; // Uncomment when enabling transcription
+import { TranscriptionService } from '../services/transcriptionService';
 
 interface CreateReportModalProps {
   isOpen: boolean;
@@ -355,8 +355,6 @@ const CreateReportModal: React.FC<CreateReportModalProps> = ({
     console.log('Audio recorded:', { duration, size: blob.size });
     console.log('Transcription available when OpenAI API key is configured');
     
-    // Uncomment below when ready to test transcription:
-    /*
     setIsTranscribing(true);
     
     try {
@@ -379,11 +377,10 @@ const CreateReportModal: React.FC<CreateReportModalProps> = ({
       }
     } catch (error) {
       console.error('Transcription failed:', error);
-      setTranscriptionError('Transcription temporarily unavailable. Audio still recorded.');
+      setTranscriptionError('Transcription service unavailable (OpenAI API key not configured). Audio still recorded.');
     } finally {
       setIsTranscribing(false);
     }
-    */
   };
 
   const handleSubmit = (e: React.FormEvent) => {
