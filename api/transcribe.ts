@@ -79,6 +79,13 @@ export default async function handler(
 
     // Record start time for duration tracking
     const startTime = Date.now();
+    
+    console.log('Calling OpenAI Whisper API with:', {
+      fileSize: audioFile.size,
+      fileName: audioFile.name,
+      fileType: audioFile.type,
+      model: 'whisper-1'
+    });
 
     // Create transcription using Whisper
     const transcription = await openai.audio.transcriptions.create({
@@ -89,6 +96,10 @@ export default async function handler(
     });
 
     const duration = Date.now() - startTime;
+    console.log('OpenAI Whisper API successful:', {
+      transcriptionLength: transcription.length,
+      duration: `${duration}ms`
+    });
 
     // Return successful response
     res.status(200).json({
@@ -98,11 +109,24 @@ export default async function handler(
     } as TranscriptionResponse);
 
   } catch (error) {
-    console.error('Transcription error:', error);
+    console.error('Transcription error details:', error);
+    
+    // Log more specific error information
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
+    
+    // Check if it's an OpenAI specific error
+    if (error && typeof error === 'object' && 'code' in error) {
+      console.error('OpenAI error code:', (error as any).code);
+      console.error('OpenAI error type:', (error as any).type);
+    }
     
     try {
       handleOpenAIError(error, 'transcription');
     } catch (handledError) {
+      console.error('Handled error:', handledError.message);
       if (handledError instanceof TranscriptionError) {
         res.status(500).json({
           success: false,
@@ -112,10 +136,11 @@ export default async function handler(
       }
     }
 
-    // Fallback error response
+    // Fallback error response with more details
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     res.status(500).json({
       success: false,
-      error: 'Internal server error during transcription'
+      error: `Transcription failed: ${errorMessage}`
     } as TranscriptionResponse);
   }
 }
@@ -157,10 +182,19 @@ async function parseAudioFile(req: VercelRequest): Promise<File | null> {
           // Read the file data
           const fileBuffer = readFileSync(file.filepath);
           
-          // Determine the MIME type based on the original filename or detected type
+          // Determine the MIME type and clean it for OpenAI compatibility
           let mimeType = file.mimetype || 'audio/webm';
+          console.log('Original MIME type:', mimeType);
+          
+          // Clean up Safari-specific codec info that might confuse OpenAI
+          if (mimeType.includes('audio/mp4')) {
+            mimeType = 'audio/mp4';
+            console.log('Cleaned MP4 MIME type for OpenAI compatibility');
+          }
+          
           if (file.originalFilename) {
             const extension = file.originalFilename.split('.').pop()?.toLowerCase();
+            console.log('File extension:', extension);
             switch (extension) {
               case 'webm':
                 mimeType = 'audio/webm';
@@ -174,18 +208,35 @@ async function parseAudioFile(req: VercelRequest): Promise<File | null> {
               case 'm4a':
                 mimeType = 'audio/m4a';
                 break;
+              case 'mp4':
+                mimeType = 'audio/mp4';
+                break;
               case 'ogg':
                 mimeType = 'audio/ogg';
                 break;
             }
           }
+          
+          console.log('Final MIME type for OpenAI:', mimeType);
 
           // Create a File-like object compatible with OpenAI API
+          console.log('Creating File object with:', {
+            bufferSize: fileBuffer.length,
+            filename: file.originalFilename || 'audio.mp4',
+            mimeType
+          });
+          
           const fileObject = new File(
             [fileBuffer], 
-            file.originalFilename || 'audio.webm',
+            file.originalFilename || 'audio.mp4', // Default to mp4 for Safari
             { type: mimeType }
           );
+          
+          console.log('File object created successfully:', {
+            size: fileObject.size,
+            name: fileObject.name,
+            type: fileObject.type
+          });
           
           resolve(fileObject);
         } catch (readError) {
