@@ -307,14 +307,26 @@
 
 ## Remedial Tasks & Bug Fixes
 
-### Known Issues to Address
-**Status**: Pending resolution
+### URGENT - Start Tomorrow Morning
 
-- [ ] **Transcription Integration**: Re-enable OpenAI transcription functionality
-  - Issue: TranscriptionService import commented out to fix production build
-  - Solution: Uncomment import and transcription code after API key configuration
-  - Location: `src/components/CreateReportModal.tsx` lines 4, 359-386
-  - Dependencies: OpenAI API key in environment variables
+- [ ] **🔴 CRITICAL: Fix Transcription API Server Error**
+  - **Issue**: "The string did not match the expected pattern" error from /api/transcribe endpoint
+  - **Status**: Audio recording works perfectly (44KB MP4 files), but transcription fails
+  - **Evidence**: OpenAI API key is configured in Vercel environment variables
+  - **Added**: Comprehensive server logging in commit d5b7110
+  - **Next Steps**: 
+    1. Check Vercel function logs to see detailed error information
+    2. Identify if it's formidable form parsing, file reading, or OpenAI API issue
+    3. Fix root cause based on log analysis
+    4. Test end-to-end audio→transcription→text workflow
+  - **Files**: `/api/transcribe.ts`, `/src/components/CreateReportModal.tsx`
+
+### Recently Fixed ✅
+
+- [x] **Audio Recording Safari Compatibility**: Browser detection, MP4 codecs, periodic data requests
+- [x] **Styled-Components Error**: Fixed keyframe animation error causing app crashes  
+- [x] **TypeScript Build**: Removed invalid Blob.lastModified property access
+- [x] **Error Handling**: Improved user feedback and graceful error states
 
 - [ ] **Browser Navigation 404 Error**: Fix page not found when using browser back button
   - Issue: Users get 404 error when navigating back in browser history
