@@ -1,11 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import type { UserRole } from '../types';
-import { CreateReportModal, OrganizationTree, ManagerView, ChatInterface } from '../components';
+import { CreateReportModal, LoadingSpinner } from '../components';
 import { reportStorage } from '../services';
 import type { StoredReport } from '../services';
 import { ORGANIZATION_USERS } from '../data';
+
+// Lazy load heavy components for better performance
+const OrganizationTree = React.lazy(() => import('../components/OrganizationTree').then(module => ({ default: module.OrganizationTree })));
+const ManagerView = React.lazy(() => import('../components/ManagerView').then(module => ({ default: module.ManagerView })));
+const ChatInterface = React.lazy(() => import('../components/ChatInterface'));
 
 const DashboardContainer = styled.div`
   min-height: 100vh;
@@ -17,16 +22,23 @@ const DashboardContainer = styled.div`
 const Header = styled.header`
   background: white;
   border-bottom: 1px solid #e2e8f0;
-  padding: 1rem 2rem;
+  padding: 1rem;
   display: flex;
-  justify-content: between;
+  justify-content: space-between;
   align-items: center;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  gap: 1rem;
   
-  @media (max-width: 768px) {
-    padding: 1rem 1rem;
+  @media (min-width: 768px) {
+    padding: 1rem 1.5rem;
+  }
+  
+  @media (min-width: 1024px) {
+    padding: 1rem 2rem;
+  }
+  
+  @media (max-width: 767px) {
     flex-wrap: wrap;
-    gap: 1rem;
   }
 `;
 
@@ -51,12 +63,13 @@ const Logo = styled.h1`
 const HeaderActions = styled.div`
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
   margin-left: auto;
+  flex-wrap: wrap;
   
-  @media (max-width: 768px) {
-    gap: 0.75rem;
-    flex-wrap: wrap;
+  @media (min-width: 768px) {
+    gap: 1rem;
+    flex-wrap: nowrap;
   }
   
   @media (max-width: 480px) {
@@ -137,34 +150,38 @@ const ContentArea = styled.div`
   flex: 1;
   display: flex;
   gap: 2rem;
-  padding: 2rem;
+  padding: 1rem;
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
   
-  @media (max-width: 1024px) {
-    flex-direction: column;
+  @media (min-width: 768px) {
+    padding: 1.5rem;
     gap: 1.5rem;
   }
   
-  @media (max-width: 768px) {
-    padding: 1.5rem 1rem;
+  @media (min-width: 1024px) {
+    padding: 2rem;
+    gap: 2rem;
+    flex-direction: row;
   }
   
-  @media (max-width: 480px) {
-    padding: 1rem 0.75rem;
+  @media (max-width: 1023px) {
+    flex-direction: column;
   }
 `;
 
 const Sidebar = styled.aside`
-  width: 400px;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  width: 100%;
+  order: 2;
   
-  @media (max-width: 1024px) {
-    width: 100%;
-    order: 2;
+  @media (min-width: 1024px) {
+    width: 400px;
+    order: 0;
+    flex-shrink: 0;
   }
 `;
 
@@ -173,10 +190,8 @@ const MainContent = styled.main`
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  
-  @media (max-width: 1024px) {
-    order: 1;
-  }
+  order: 1;
+  min-width: 0; /* Prevents flex item from overflowing */
 `;
 
 const WelcomeCard = styled.div`
@@ -559,14 +574,16 @@ const DashboardPage: React.FC = () => {
           
           {/* Manager/Leadership View */}
           {['Manager', 'Director', 'VP', 'CTO'].includes(currentRole) && currentUserId && (
-            <ManagerView
-              currentUserId={currentUserId}
-              currentUserRole={currentRole}
-              selectedDate={selectedDate}
-              onGenerateReport={(content) => {
-                console.log('Generated report:', content);
-              }}
-            />
+            <Suspense fallback={<LoadingSpinner size="lg" text="Loading manager view..." />}>
+              <ManagerView
+                currentUserId={currentUserId}
+                currentUserRole={currentRole}
+                selectedDate={selectedDate}
+                onGenerateReport={(content) => {
+                  console.log('Generated report:', content);
+                }}
+              />
+            </Suspense>
           )}
 
           <ReportsSection>
@@ -623,19 +640,23 @@ const DashboardPage: React.FC = () => {
 
           {/* Chat Interface for Leadership Roles */}
           {['Manager', 'Director', 'VP', 'CTO'].includes(currentRole) && (
-            <ChatInterface
-              currentUserId={currentUserId || undefined}
-              currentUserRole={currentRole}
-              selectedDate={selectedDate}
-            />
+            <Suspense fallback={<LoadingSpinner size="md" text="Loading chat..." />}>
+              <ChatInterface
+                currentUserId={currentUserId || undefined}
+                currentUserRole={currentRole}
+                selectedDate={selectedDate}
+              />
+            </Suspense>
           )}
 
-          <OrganizationTree
-            currentUserRole={currentRole}
-            currentUserId={currentUserId || undefined}
-            selectedDate={selectedDate}
-            onUserSelect={handleUserSelect}
-          />
+          <Suspense fallback={<LoadingSpinner size="md" text="Loading organization tree..." />}>
+            <OrganizationTree
+              currentUserRole={currentRole}
+              currentUserId={currentUserId || undefined}
+              selectedDate={selectedDate}
+              onUserSelect={handleUserSelect}
+            />
+          </Suspense>
 
           <PreviousReportsCard>
             <PreviousReportsHeader>Previous Reports</PreviousReportsHeader>

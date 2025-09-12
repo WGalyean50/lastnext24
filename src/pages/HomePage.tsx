@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
+import { FadeInAnimation } from '../components';
 
 const HomeContainer = styled.div`
   display: flex;
@@ -78,11 +79,19 @@ const DemoButton = styled(Link)`
 const HomePage: React.FC = () => {
   return (
     <HomeContainer>
-      <Title>LastNext24</Title>
-      <Tagline>Rapid Reporting Made Easy</Tagline>
-      <DemoButton to="/role-select">
-        Enter Demo Version
-      </DemoButton>
+      <FadeInAnimation animation="fadeIn" duration={600} delay={200}>
+        <Title>LastNext24</Title>
+      </FadeInAnimation>
+      
+      <FadeInAnimation animation="fadeIn" duration={600} delay={400}>
+        <Tagline>Rapid Reporting Made Easy</Tagline>
+      </FadeInAnimation>
+      
+      <FadeInAnimation animation="scaleIn" duration={500} delay={800}>
+        <DemoButton to="/role-select">
+          Enter Demo Version
+        </DemoButton>
+      </FadeInAnimation>
     </HomeContainer>
   );
 };

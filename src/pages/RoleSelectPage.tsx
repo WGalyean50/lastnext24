@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import type { UserRole } from '../types';
+import { FadeInAnimation } from '../components';
 
 const RoleSelectContainer = styled.div`
   display: flex;
@@ -182,15 +183,27 @@ const RoleSelectPage: React.FC = () => {
         ← Back to Home
       </BackButton>
       
-      <Title>Select Your Role</Title>
-      <Subtitle>Choose a role to experience the demo from that perspective</Subtitle>
+      <FadeInAnimation animation="slideInLeft" duration={500} delay={100}>
+        <Title>Select Your Role</Title>
+      </FadeInAnimation>
+      
+      <FadeInAnimation animation="slideInLeft" duration={500} delay={300}>
+        <Subtitle>Choose a role to experience the demo from that perspective</Subtitle>
+      </FadeInAnimation>
       
       <RoleGrid>
-        {roles.map(({ role, title, description }) => (
-          <RoleCard key={role} onClick={() => handleRoleSelect(role)}>
-            <h3>{title}</h3>
-            <p>{description}</p>
-          </RoleCard>
+        {roles.map(({ role, title, description }, index) => (
+          <FadeInAnimation 
+            key={role} 
+            animation="scaleIn" 
+            duration={400} 
+            delay={500 + (index * 100)}
+          >
+            <RoleCard onClick={() => handleRoleSelect(role)}>
+              <h3>{title}</h3>
+              <p>{description}</p>
+            </RoleCard>
+          </FadeInAnimation>
         ))}
       </RoleGrid>
     </RoleSelectContainer>
