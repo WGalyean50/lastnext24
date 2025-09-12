@@ -12,6 +12,10 @@ const HomeContainer = styled.div`
   color: white;
   text-align: center;
   padding: 20px;
+  
+  @media (max-width: 768px) {
+    padding: 20px 15px;
+  }
 `;
 
 const Title = styled.h1`
@@ -19,6 +23,14 @@ const Title = styled.h1`
   font-weight: 700;
   margin-bottom: 1rem;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  
+  @media (max-width: 768px) {
+    font-size: 2.5rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 2rem;
+  }
 `;
 
 const Tagline = styled.h2`
@@ -26,6 +38,15 @@ const Tagline = styled.h2`
   font-weight: 400;
   margin-bottom: 3rem;
   opacity: 0.9;
+  
+  @media (max-width: 768px) {
+    font-size: 1.25rem;
+    margin-bottom: 2rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 1.125rem;
+  }
 `;
 
 const DemoButton = styled(Link)`
@@ -38,11 +59,19 @@ const DemoButton = styled(Link)`
   border-radius: 8px;
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  display: inline-block;
+  min-width: 200px;
 
   &:hover {
     background: #2563eb;
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.875rem 1.5rem;
+    font-size: 1.1rem;
+    min-width: 180px;
   }
 `;
 

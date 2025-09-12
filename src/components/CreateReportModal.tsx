@@ -38,6 +38,19 @@ const ModalContainer = styled.div`
   overflow-y: auto;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   position: relative;
+  
+  @media (max-width: 768px) {
+    width: 95%;
+    max-height: 85vh;
+    border-radius: 8px;
+  }
+  
+  @media (max-width: 480px) {
+    width: 100%;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+  }
 `;
 
 const ModalHeader = styled.div`
@@ -46,6 +59,14 @@ const ModalHeader = styled.div`
   align-items: center;
   padding: 1.5rem 2rem 1rem 2rem;
   border-bottom: 1px solid #e2e8f0;
+  
+  @media (max-width: 768px) {
+    padding: 1.25rem 1.5rem 0.75rem 1.5rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 1rem 1rem 0.75rem 1rem;
+  }
 `;
 
 const ModalTitle = styled.h2`
@@ -53,6 +74,14 @@ const ModalTitle = styled.h2`
   font-weight: 600;
   color: #1e293b;
   margin: 0;
+  
+  @media (max-width: 768px) {
+    font-size: 1.25rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 1.125rem;
+  }
 `;
 
 const CloseButton = styled.button`
@@ -78,6 +107,14 @@ const CloseButton = styled.button`
 
 const ModalBody = styled.div`
   padding: 1.5rem 2rem 2rem 2rem;
+  
+  @media (max-width: 768px) {
+    padding: 1.25rem 1.5rem 1.5rem 1.5rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 1rem 1rem 1.25rem 1rem;
+  }
 `;
 
 const FormField = styled.div`
@@ -130,6 +167,16 @@ const ButtonGroup = styled.div`
   justify-content: flex-end;
   gap: 0.75rem;
   margin-top: 2rem;
+  
+  @media (max-width: 480px) {
+    flex-direction: column-reverse;
+    gap: 0.5rem;
+    
+    button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
 `;
 
 const Button = styled.button<{ variant?: 'primary' | 'secondary' }>`
@@ -181,6 +228,11 @@ const AudioSection = styled.div`
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #f8fafc;
+  
+  @media (max-width: 480px) {
+    margin: 0.75rem 0;
+    padding: 0.75rem;
+  }
 `;
 
 const SectionTitle = styled.h3`

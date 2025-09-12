@@ -32,6 +32,11 @@ const RecorderContainer = styled.div`
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #f8fafc;
+  
+  @media (max-width: 480px) {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
 `;
 
 const RecordButton = styled.button<{ 

@@ -12,6 +12,12 @@ const RoleSelectContainer = styled.div`
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   padding: 20px;
+  
+  @media (max-width: 768px) {
+    padding: 20px 15px;
+    justify-content: flex-start;
+    padding-top: 60px;
+  }
 `;
 
 const Title = styled.h1`
@@ -19,6 +25,14 @@ const Title = styled.h1`
   font-weight: 700;
   margin-bottom: 1rem;
   text-align: center;
+  
+  @media (max-width: 768px) {
+    font-size: 2rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 1.75rem;
+  }
 `;
 
 const Subtitle = styled.p`
@@ -26,6 +40,15 @@ const Subtitle = styled.p`
   margin-bottom: 3rem;
   text-align: center;
   opacity: 0.9;
+  
+  @media (max-width: 768px) {
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 1rem;
+  }
 `;
 
 const RoleGrid = styled.div`
@@ -34,6 +57,18 @@ const RoleGrid = styled.div`
   gap: 1.5rem;
   width: 100%;
   max-width: 800px;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    max-width: 500px;
+  }
+  
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    max-width: 300px;
+  }
 `;
 
 const RoleCard = styled.button`
@@ -66,6 +101,31 @@ const RoleCard = styled.button`
     font-size: 0.9rem;
     font-weight: 400;
   }
+  
+  @media (max-width: 768px) {
+    padding: 1.5rem 1rem;
+    
+    h3 {
+      font-size: 1.2rem;
+    }
+    
+    p {
+      font-size: 0.85rem;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    padding: 1.25rem 1rem;
+    font-size: 1rem;
+    
+    h3 {
+      font-size: 1.1rem;
+    }
+    
+    p {
+      font-size: 0.8rem;
+    }
+  }
 `;
 
 const BackButton = styled.button`
@@ -83,6 +143,13 @@ const BackButton = styled.button`
 
   &:hover {
     background: rgba(255, 255, 255, 0.2);
+  }
+  
+  @media (max-width: 768px) {
+    top: 1rem;
+    left: 1rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
   }
 `;
 

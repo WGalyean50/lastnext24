@@ -21,6 +21,12 @@ const Header = styled.header`
   justify-content: between;
   align-items: center;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  
+  @media (max-width: 768px) {
+    padding: 1rem 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
 `;
 
 const Logo = styled.h1`
@@ -28,6 +34,17 @@ const Logo = styled.h1`
   font-weight: 700;
   color: #3b82f6;
   margin: 0;
+  
+  @media (max-width: 768px) {
+    font-size: 1.25rem;
+  }
+  
+  @media (max-width: 480px) {
+    font-size: 1.125rem;
+    width: 100%;
+    text-align: center;
+    margin-bottom: 0.5rem;
+  }
 `;
 
 const HeaderActions = styled.div`
@@ -35,6 +52,17 @@ const HeaderActions = styled.div`
   align-items: center;
   gap: 1rem;
   margin-left: auto;
+  
+  @media (max-width: 768px) {
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  
+  @media (max-width: 480px) {
+    width: 100%;
+    justify-content: space-between;
+    margin-left: 0;
+  }
 `;
 
 const RoleIndicator = styled.div`
@@ -44,6 +72,12 @@ const RoleIndicator = styled.div`
   border-radius: 20px;
   font-size: 0.875rem;
   font-weight: 600;
+  white-space: nowrap;
+  
+  @media (max-width: 768px) {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+  }
 `;
 
 const NewReportButton = styled.button`
@@ -55,9 +89,20 @@ const NewReportButton = styled.button`
   font-weight: 600;
   cursor: pointer;
   transition: background 0.2s;
+  white-space: nowrap;
 
   &:hover {
     background: #2563eb;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+  }
+  
+  @media (max-width: 480px) {
+    flex: 1;
+    padding: 0.75rem 1rem;
   }
 `;
 
@@ -70,10 +115,20 @@ const ChangeRoleButton = styled.button`
   cursor: pointer;
   font-size: 0.875rem;
   transition: all 0.2s;
+  white-space: nowrap;
 
   &:hover {
     border-color: #94a3b8;
     color: #475569;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+  }
+  
+  @media (max-width: 480px) {
+    flex: 1;
   }
 `;
 
@@ -83,6 +138,14 @@ const MainContent = styled.main`
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
+  
+  @media (max-width: 768px) {
+    padding: 1.5rem 1rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 1rem 0.75rem;
+  }
 `;
 
 const WelcomeCard = styled.div`
@@ -138,6 +201,15 @@ const ReportCard = styled.div`
   padding: 1.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   border-left: 4px solid #3b82f6;
+  
+  @media (max-width: 768px) {
+    padding: 1.25rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 1rem;
+    border-radius: 6px;
+  }
 `;
 
 const ReportHeader = styled.div`
@@ -145,6 +217,12 @@ const ReportHeader = styled.div`
   justify-content: between;
   align-items: flex-start;
   margin-bottom: 0.75rem;
+  
+  @media (max-width: 480px) {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
 `;
 
 const ReportTitle = styled.h4`
@@ -158,6 +236,12 @@ const ReportDate = styled.span`
   font-size: 0.875rem;
   color: #64748b;
   margin-left: auto;
+  white-space: nowrap;
+  
+  @media (max-width: 480px) {
+    margin-left: 0;
+    font-size: 0.8rem;
+  }
 `;
 
 const ReportContent = styled.p`
@@ -173,6 +257,12 @@ const ReportMeta = styled.div`
   color: #64748b;
   display: flex;
   gap: 1rem;
+  
+  @media (max-width: 480px) {
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.7rem;
+  }
 `;
 
 const AudioIndicator = styled.span`
@@ -195,6 +285,26 @@ const EmptyState = styled.div`
   
   p {
     margin: 0;
+  }
+  
+  @media (max-width: 768px) {
+    padding: 2rem 1.5rem;
+    
+    h3 {
+      font-size: 1.1rem;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    padding: 1.5rem 1rem;
+    
+    h3 {
+      font-size: 1rem;
+    }
+    
+    p {
+      font-size: 0.9rem;
+    }
   }
 `;
 
