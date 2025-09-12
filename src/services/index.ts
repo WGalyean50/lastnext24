@@ -1,2 +1,3 @@
 // Services exports
-// This file will be populated as services are added
+export { reportStorage, ReportStorageService } from './reportStorage';
+export type { StoredReport, CreateReportData } from './reportStorage';

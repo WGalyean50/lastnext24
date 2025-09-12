@@ -9,6 +9,8 @@ interface CreateReportModalProps {
     title?: string;
     content: string;
     date: string;
+    audio_blob?: Blob;
+    audio_duration?: number;
   }) => void;
 }
 
@@ -269,7 +271,9 @@ const CreateReportModal: React.FC<CreateReportModalProps> = ({
     onSubmit({
       title: title.trim() || undefined,
       content: content.trim(),
-      date
+      date,
+      audio_blob: audioBlob || undefined,
+      audio_duration: recordingDuration || undefined
     });
     
     onClose();
