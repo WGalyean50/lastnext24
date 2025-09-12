@@ -169,14 +169,6 @@ const WelcomeText = styled.p`
   line-height: 1.6;
 `;
 
-const PlaceholderCard = styled.div`
-  background: white;
-  border-radius: 8px;
-  padding: 2rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  text-align: center;
-  color: #64748b;
-`;
 
 const ReportsSection = styled.div`
   margin-top: 2rem;
@@ -313,7 +305,6 @@ const DashboardPage: React.FC = () => {
   const [currentRole, setCurrentRole] = useState<UserRole | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [reports, setReports] = useState<StoredReport[]>([]);
-  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
   useEffect(() => {
     // Get role from session storage
@@ -358,8 +349,6 @@ const DashboardPage: React.FC = () => {
     audio_duration?: number;
   }) => {
     try {
-      setIsSubmittingReport(true);
-      
       const newReport = await reportStorage.createReport({
         title: reportData.title,
         content: reportData.content,
@@ -377,8 +366,6 @@ const DashboardPage: React.FC = () => {
     } catch (error) {
       console.error('Failed to create report:', error);
       alert('Failed to save report. Please try again.');
-    } finally {
-      setIsSubmittingReport(false);
     }
   };
 

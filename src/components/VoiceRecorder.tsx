@@ -157,7 +157,7 @@ const ErrorMessage = styled.div`
 
 const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   onAudioRecorded,
-  onTranscriptionReceived
+  onTranscriptionReceived: _onTranscriptionReceived
 }) => {
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
   const [recordingTime, setRecordingTime] = useState(0);
@@ -166,7 +166,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
 
   const formatTime = (seconds: number): string => {

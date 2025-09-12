@@ -6,6 +6,7 @@ const AUDIO_KEY_PREFIX = 'lastnext24_audio_';
 
 export interface StoredReport extends Omit<Report, 'id'> {
   id?: string; // Make id optional for new reports
+  title?: string; // Optional title for the report
   audio_blob_key?: string; // Key to retrieve audio from separate storage
   has_audio?: boolean; // Flag to indicate if there's associated audio
 }
@@ -76,31 +77,6 @@ export class ReportStorageService {
     }
   }
 
-  private storeAudioBlob(reportId: string, audioBlob: Blob): string {
-    try {
-      const audioKey = `${AUDIO_KEY_PREFIX}${reportId}`;
-      
-      // Convert blob to base64 for storage
-      const reader = new FileReader();
-      return new Promise<string>((resolve, reject) => {
-        reader.onload = () => {
-          try {
-            const base64Data = reader.result as string;
-            localStorage.setItem(audioKey, base64Data);
-            resolve(audioKey);
-          } catch (error) {
-            reject(error);
-          }
-        };
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(audioBlob);
-      }) as any; // Temporary workaround for async in constructor
-      
-    } catch (error) {
-      console.error('Error storing audio blob:', error);
-      throw new Error('Failed to store audio. Storage may be full.');
-    }
-  }
 
   public async createReport(reportData: CreateReportData): Promise<StoredReport> {
     const currentUser = this.getCurrentUser();
@@ -110,6 +86,7 @@ export class ReportStorageService {
     const report: StoredReport = {
       id: reportId,
       user_id: currentUser.id,
+      title: reportData.title,
       date: reportData.date,
       content: reportData.content,
       created_at: now,
