@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import VoiceRecorder from './VoiceRecorder';
+import { TranscriptionService } from '../services/transcriptionService';
 
 interface CreateReportModalProps {
   isOpen: boolean;
@@ -242,15 +243,50 @@ const SectionTitle = styled.h3`
   margin: 0 0 1rem 0;
 `;
 
-const AudioStatus = styled.div`
+const AudioStatus = styled.div<{ variant?: 'success' | 'loading' | 'error' }>`
   margin-top: 0.75rem;
   padding: 0.5rem;
   border-radius: 4px;
-  background: #ecfccb;
-  border: 1px solid #bef264;
-  color: #365314;
   font-size: 0.875rem;
   text-align: center;
+  
+  ${props => {
+    switch (props.variant) {
+      case 'loading':
+        return `
+          background: #fef3c7;
+          border: 1px solid #f59e0b;
+          color: #92400e;
+        `;
+      case 'error':
+        return `
+          background: #fef2f2;
+          border: 1px solid #fca5a5;
+          color: #991b1b;
+        `;
+      case 'success':
+      default:
+        return `
+          background: #ecfccb;
+          border: 1px solid #bef264;
+          color: #365314;
+        `;
+    }
+  }}
+`;
+
+const LoadingDots = styled.span`
+  &::after {
+    content: '';
+    animation: loading-dots 1.5s infinite;
+  }
+  
+  @keyframes loading-dots {
+    0%, 20% { content: ''; }
+    40% { content: '.'; }
+    60% { content: '..'; }
+    80%, 100% { content: '...'; }
+  }
 `;
 
 const CreateReportModal: React.FC<CreateReportModalProps> = ({
@@ -263,6 +299,8 @@ const CreateReportModal: React.FC<CreateReportModalProps> = ({
   const [date, setDate] = useState('');
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [recordingDuration, setRecordingDuration] = useState<number>(0);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [transcriptionError, setTranscriptionError] = useState<string>('');
 
   useEffect(() => {
     if (isOpen) {
@@ -279,6 +317,8 @@ const CreateReportModal: React.FC<CreateReportModalProps> = ({
       setDate('');
       setAudioBlob(null);
       setRecordingDuration(0);
+      setIsTranscribing(false);
+      setTranscriptionError('');
       document.body.style.overflow = 'unset';
     }
 
@@ -305,11 +345,41 @@ const CreateReportModal: React.FC<CreateReportModalProps> = ({
     };
   }, [isOpen, onClose]);
 
-  const handleAudioRecorded = (blob: Blob, duration: number) => {
+  const handleAudioRecorded = async (blob: Blob, duration: number) => {
     setAudioBlob(blob);
     setRecordingDuration(duration);
-    // TODO: In Phase 4.2, we'll send this to transcription API
-    console.log('Audio recorded:', { duration, size: blob.size });
+    setTranscriptionError('');
+    
+    // Start transcription automatically
+    setIsTranscribing(true);
+    
+    try {
+      const result = await TranscriptionService.transcribeAudio(blob);
+      
+      if (result.success && result.transcription) {
+        // Add transcribed text to the content area
+        const transcribedText = result.transcription.trim();
+        if (transcribedText) {
+          // If content area is empty, set the transcription
+          // If it has content, append with a separator
+          setContent(prevContent => {
+            const existing = prevContent.trim();
+            if (!existing) {
+              return transcribedText;
+            } else {
+              return `${existing}\n\n[Voice recording]: ${transcribedText}`;
+            }
+          });
+        }
+      } else {
+        setTranscriptionError(result.error || 'Failed to transcribe audio');
+      }
+    } catch (error) {
+      console.error('Transcription failed:', error);
+      setTranscriptionError('Failed to transcribe audio. Please try again.');
+    } finally {
+      setIsTranscribing(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -400,9 +470,19 @@ const CreateReportModal: React.FC<CreateReportModalProps> = ({
               <VoiceRecorder 
                 onAudioRecorded={handleAudioRecorded}
               />
-              {audioBlob && (
-                <AudioStatus>
-                  ✓ Audio recorded ({recordingDuration}s) - Ready to submit
+              {isTranscribing && (
+                <AudioStatus variant="loading">
+                  🎤 Transcribing audio<LoadingDots />
+                </AudioStatus>
+              )}
+              {transcriptionError && (
+                <AudioStatus variant="error">
+                  ❌ {transcriptionError}
+                </AudioStatus>
+              )}
+              {audioBlob && !isTranscribing && !transcriptionError && (
+                <AudioStatus variant="success">
+                  ✓ Audio recorded ({recordingDuration}s) and transcribed - Ready to submit
                 </AudioStatus>
               )}
             </AudioSection>
