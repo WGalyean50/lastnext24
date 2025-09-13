@@ -35,8 +35,8 @@ export class TranscriptionService {
       const formData = new FormData();
       formData.append('audio', audioBlob, 'recording.webm');
       
-      // Make the API request
-      const response = await fetch(`${this.API_BASE}/transcribe`, {
+      // Make the API request - temporarily use demo endpoint while OpenAI API key is being configured
+      const response = await fetch(`${this.API_BASE}/transcribe-demo`, {
         method: 'POST',
         body: formData,
       });
