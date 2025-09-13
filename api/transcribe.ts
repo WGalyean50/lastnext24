@@ -15,36 +15,68 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ): Promise<void> {
-  // Set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
-
-  // Only allow POST requests
-  if (req.method !== 'POST') {
-    res.status(405).json({
-      success: false,
-      error: 'Method not allowed. Use POST.'
-    } as TranscriptionResponse);
-    return;
-  }
-
+  let stepName = 'INITIALIZATION';
+  
   try {
+    // 🚀 COMPREHENSIVE LOGGING AT FUNCTION START
+    console.log('🚀 TRANSCRIBE FUNCTION START', {
+      timestamp: new Date().toISOString(),
+      method: req.method,
+      url: req.url,
+      headers: {
+        'content-type': req.headers['content-type'],
+        'content-length': req.headers['content-length'],
+        'user-agent': req.headers['user-agent']?.substring(0, 50),
+      },
+      hasOpenAIKey: !!process.env.OPENAI_API_KEY,
+      openAIKeyLength: process.env.OPENAI_API_KEY?.length,
+      openAIKeyPrefix: process.env.OPENAI_API_KEY?.substring(0, 7) + '...',
+      bodyType: typeof req.body,
+      queryParams: req.query,
+      nodeVersion: process.version,
+      platform: process.platform
+    });
+
+    stepName = 'CORS_HEADERS';
+    // Set CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    console.log('✅ CORS headers set successfully');
+
+    stepName = 'OPTIONS_REQUEST_CHECK';
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+      console.log('📋 Handling OPTIONS preflight request');
+      res.status(200).end();
+      return;
+    }
+
+    stepName = 'METHOD_VALIDATION';
+    // Only allow POST requests
+    if (req.method !== 'POST') {
+      console.log('❌ Invalid HTTP method:', req.method);
+      res.status(405).json({
+        success: false,
+        error: 'Method not allowed. Use POST.'
+      } as TranscriptionResponse);
+      return;
+    }
+    console.log('✅ POST method validated');
+
+    stepName = 'API_KEY_VALIDATION';
     // Check if OpenAI API key is configured
     if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'your_openai_api_key_here') {
+      console.log('❌ OpenAI API key not configured');
       res.status(503).json({
         success: false,
         error: 'Transcription service unavailable: OpenAI API key not configured. Please set OPENAI_API_KEY environment variable.'
       } as TranscriptionResponse);
       return;
     }
+    console.log('✅ OpenAI API key validated');
 
+    stepName = 'CONTENT_TYPE_VALIDATION';
     // Validate content type (be more flexible)
     const contentType = req.headers['content-type'];
     console.log('📋 Request content type:', contentType);
@@ -57,33 +89,49 @@ export default async function handler(
       } as TranscriptionResponse);
       return;
     }
+    console.log('✅ Content-Type validated');
 
+    stepName = 'FORM_PARSING';
     // Parse the audio file from the request
+    console.log('🎤 Starting form parsing...');
     const audioFile = await parseAudioFile(req);
     if (!audioFile) {
+      console.log('❌ No audio file found after parsing');
       res.status(400).json({
         success: false,
         error: 'No audio file provided'
       } as TranscriptionResponse);
       return;
     }
+    console.log('✅ Audio file parsed successfully:', {
+      name: audioFile.name,
+      size: audioFile.size,
+      type: audioFile.type
+    });
 
+    stepName = 'AUDIO_FILE_VALIDATION';
     // Check if the audio file has content
     if (audioFile.size === 0) {
+      console.log('❌ Audio file is empty');
       res.status(400).json({
         success: false,
         error: 'Audio file is empty. Please record some audio before submitting.'
       } as TranscriptionResponse);
       return;
     }
+    console.log('✅ Audio file size validated:', audioFile.size, 'bytes');
 
+    stepName = 'OPENAI_CLIENT_CREATION';
     // Create OpenAI client
+    console.log('🤖 Creating OpenAI client...');
     const openai = createOpenAIClient();
+    console.log('✅ OpenAI client created successfully');
 
+    stepName = 'OPENAI_API_CALL';
     // Record start time for duration tracking
     const startTime = Date.now();
     
-    console.log('Calling OpenAI Whisper API with:', {
+    console.log('🎯 Calling OpenAI Whisper API with:', {
       fileSize: audioFile.size,
       fileName: audioFile.name,
       fileType: audioFile.type,
@@ -98,13 +146,16 @@ export default async function handler(
       response_format: 'text',
     });
 
+    stepName = 'RESPONSE_PROCESSING';
     const duration = Date.now() - startTime;
-    console.log('OpenAI Whisper API successful:', {
+    console.log('✅ OpenAI Whisper API successful:', {
       transcriptionLength: transcription.length,
-      duration: `${duration}ms`
+      duration: `${duration}ms`,
+      preview: transcription.substring(0, 100) + '...'
     });
 
     // Return successful response
+    console.log('🎉 Sending successful response to client');
     res.status(200).json({
       success: true,
       transcription: transcription,
@@ -112,39 +163,83 @@ export default async function handler(
     } as TranscriptionResponse);
 
   } catch (error) {
-    console.error('Transcription error details:', error);
+    // 🚨 COMPREHENSIVE ERROR CAPTURE AND LOGGING
+    console.error(`❌ TRANSCRIBE FUNCTION ERROR at step: ${stepName}`, {
+      step: stepName,
+      timestamp: new Date().toISOString(),
+      error: error,
+      errorType: typeof error,
+      errorName: error instanceof Error ? error.name : 'Unknown',
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorStack: error instanceof Error ? error.stack?.substring(0, 500) : undefined,
+      errorCode: (error as any)?.code,
+      errorStatus: (error as any)?.status,
+      isOpenAIError: error && typeof error === 'object' && 'code' in error,
+      hasOpenAIKey: !!process.env.OPENAI_API_KEY,
+      nodeVersion: process.version,
+      platform: process.platform
+    });
     
-    // Log more specific error information
-    if (error instanceof Error) {
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
-    }
-    
-    // Check if it's an OpenAI specific error
+    // Additional OpenAI-specific error logging
     if (error && typeof error === 'object' && 'code' in error) {
-      console.error('OpenAI error code:', (error as any).code);
-      console.error('OpenAI error type:', (error as any).type);
+      console.error('🤖 OpenAI API Error Details:', {
+        code: (error as any).code,
+        type: (error as any).type,
+        param: (error as any).param,
+        message: (error as any).message
+      });
     }
     
-    try {
-      handleOpenAIError(error, 'transcription');
-    } catch (handledError) {
-      console.error('Handled error:', handledError.message);
-      if (handledError instanceof TranscriptionError) {
-        res.status(500).json({
-          success: false,
-          error: handledError.message
-        } as TranscriptionResponse);
-        return;
-      }
+    // Try to provide helpful error messages based on the step where it failed
+    let userFriendlyMessage = 'Transcription failed';
+    let statusCode = 500;
+    
+    switch (stepName) {
+      case 'INITIALIZATION':
+      case 'CORS_HEADERS':
+        userFriendlyMessage = 'Server initialization failed';
+        statusCode = 503;
+        break;
+      case 'API_KEY_VALIDATION':
+        userFriendlyMessage = 'OpenAI API key validation failed';
+        statusCode = 503;
+        break;
+      case 'CONTENT_TYPE_VALIDATION':
+        userFriendlyMessage = 'Invalid audio data format';
+        statusCode = 400;
+        break;
+      case 'FORM_PARSING':
+        userFriendlyMessage = 'Failed to process audio file';
+        statusCode = 400;
+        break;
+      case 'OPENAI_CLIENT_CREATION':
+        userFriendlyMessage = 'OpenAI service initialization failed';
+        statusCode = 503;
+        break;
+      case 'OPENAI_API_CALL':
+        userFriendlyMessage = 'OpenAI Whisper API call failed';
+        statusCode = 502;
+        break;
+      case 'RESPONSE_PROCESSING':
+        userFriendlyMessage = 'Failed to process transcription result';
+        statusCode = 500;
+        break;
+      default:
+        userFriendlyMessage = `Function failed at ${stepName}`;
     }
-
-    // Fallback error response with more details
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    res.status(500).json({
+    
+    // Include specific error details for debugging
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const debugInfo = `Step: ${stepName}, Error: ${errorMessage}`;
+    
+    console.error(`🎯 Sending ${statusCode} response to client:`, userFriendlyMessage);
+    res.status(statusCode).json({
       success: false,
-      error: `Transcription failed: ${errorMessage}`
-    } as TranscriptionResponse);
+      error: `${userFriendlyMessage}: ${errorMessage}`,
+      step: stepName,
+      debug: debugInfo,
+      timestamp: new Date().toISOString()
+    } as TranscriptionResponse & { step: string; debug: string; timestamp: string });
   }
 }
 
