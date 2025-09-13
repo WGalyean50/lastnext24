@@ -138,12 +138,20 @@ export default async function handler(
       model: 'whisper-1'
     });
 
-    // Create transcription using Whisper
+    // Create transcription using Whisper with enhanced compatibility
+    console.log('🎯 Preparing OpenAI request with file:', {
+      name: audioFile.name,
+      size: audioFile.size,
+      type: audioFile.type
+    });
+    
     const transcription = await openai.audio.transcriptions.create({
       file: audioFile,
       model: 'whisper-1',
-      language: 'en', // Specify English for better accuracy
+      language: 'en',
       response_format: 'text',
+      // Add additional parameters for better compatibility
+      temperature: 0.0, // More deterministic transcription
     });
 
     stepName = 'RESPONSE_PROCESSING';
@@ -363,13 +371,23 @@ async function parseAudioFile(req: VercelRequest): Promise<File | null> {
             bufferSize: fileBuffer.length
           });
 
-          // Create a File-like object compatible with OpenAI API
-          const fileObject = new File([fileBuffer], filename, { type: mimeType });
+          // Create File object with proper stream for OpenAI API
+          // Use Blob instead of File for better compatibility
+          const audioBlob = new Blob([fileBuffer], { type: mimeType });
+          
+          // Create a File-like object with additional properties OpenAI expects
+          const fileObject = Object.assign(audioBlob, {
+            name: filename,
+            lastModified: Date.now(),
+            webkitRelativePath: ""
+          }) as File;
           
           console.log('🚀 File object created successfully:', {
             size: fileObject.size,
-            name: fileObject.name,
-            type: fileObject.type
+            name: filename,
+            type: mimeType,
+            isBlob: fileObject instanceof Blob,
+            hasName: 'name' in fileObject
           });
           
           resolve(fileObject);
