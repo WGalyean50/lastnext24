@@ -1,0 +1,46 @@
+{
+  "name": "voice-transcription-package",
+  "version": "1.0.0",
+  "description": "Complete voice recording and OpenAI Whisper transcription system - extracted from Interview Hero MVP",
+  "main": "src/components/AudioRecorder.tsx",
+  "scripts": {
+    "dev": "echo 'Copy files to your React project and import AudioRecorder component'",
+    "start:api": "cd external-api && npm install && node server.js"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "lucide-react": "^0.542.0"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "keywords": [
+    "voice",
+    "recording",
+    "transcription", 
+    "openai",
+    "whisper",
+    "react",
+    "typescript",
+    "speech-to-text",
+    "audio",
+    "microphone"
+  ],
+  "author": "Interview Hero Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-repo/voice-transcription-package.git"
+  },
+  "files": [
+    "src/",
+    "external-api/",
+    "api/",
+    "types/",
+    "README.md",
+    "example-integration.tsx"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import formidable from 'formidable';
 import { readFileSync } from 'fs';
-import { createOpenAIClient, handleOpenAIError, TranscriptionError } from './lib/openai';
+import OpenAI from 'openai';
 
 // Define the expected response format
 interface TranscriptionResponse {
@@ -122,9 +122,11 @@ export default async function handler(
     console.log('✅ Audio file size validated:', audioFile.size, 'bytes');
 
     stepName = 'OPENAI_CLIENT_CREATION';
-    // Create OpenAI client
+    // Create OpenAI client directly (no external import)
     console.log('🤖 Creating OpenAI client...');
-    const openai = createOpenAIClient();
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
     console.log('✅ OpenAI client created successfully');
 
     stepName = 'OPENAI_API_CALL';
